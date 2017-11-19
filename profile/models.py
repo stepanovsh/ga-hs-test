@@ -21,7 +21,7 @@ class JWTUserToken(models.UserToken):
     def generate_jwt(cls, user, subject):
         payload = {
             'user_id': user,
-            'subject': subject,
+            'iss': subject,
             'exp': datetime.utcnow() + timedelta(
                 seconds=JWT_EXP_DELTA_SECONDS if subject == 'auth' else REFRESH_JWT_EXP_DELTA_SECONDS)
         }

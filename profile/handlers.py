@@ -18,11 +18,46 @@ def user_required(handler):
     """
 
     def check_login(self, *args, **kwargs):
-        auth = self.auth
-        if not auth.get_user_by_session():
-            self.redirect(self.uri_for('login'), abort=True)
+        auth_header = self.request.headers['Authorization']
+        start, token = auth_header.split(' ')
+        if start == 'Bearer' and token:
+            try:
+                payload = jwt.decode(token, JWT_SECRET, issuer='auth', algorithms=JWT_ALGORITHM)
+                auth = self.auth
+                if not auth.get_user_by_token(int(payload.get('user_id')), token):
+                    self.response.headers['Content-Type'] = 'application/json'
+                    self.response.write(json.encode({
+                        'detail': 'Your have invalid token!'
+                    }))
+                    self.response.set_status(401)
+                    logging.info('Access token has been invalid')
+                    return
+                else:
+                    return handler(self, *args, **kwargs)
+            except jwt.ExpiredSignatureError:
+                self.response.headers['Content-Type'] = 'application/json'
+                self.response.write(json.encode({
+                    'detail': 'Your access token has been expired!'
+                }))
+                self.response.set_status(401)
+                logging.info('Refresh token has been expired')
+                return
+            except jwt.InvalidIssuerError:
+                self.response.headers['Content-Type'] = 'application/json'
+                self.response.write(json.encode({
+                    'detail': 'Your have invalid token type!'
+                }))
+                self.response.set_status(401)
+                logging.info('Access token has been invalid')
+                return
         else:
-            return handler(self, *args, **kwargs)
+            self.response.headers['Content-Type'] = 'application/json'
+            self.response.write(json.encode({
+                'detail': 'Your have invalid token format!'
+            }))
+            self.response.set_status(401)
+            logging.info('Access token has been invalid')
+            return
 
     return check_login
 
@@ -43,6 +78,7 @@ class BaseHandler(webapp2.RequestHandler):
         :returns
           A dictionary with most user information
         """
+        self.auth.get_user_by_token()
         return self.auth.get_user_by_session()
 
     @webapp2.cached_property
@@ -159,10 +195,17 @@ class TokenHandler(BaseHandler):
                 return
             refresh_token = form.data.get('refresh_token')
             try:
-                payload = jwt.decode(refresh_token, JWT_SECRET, JWT_ALGORITHM)
+                payload = jwt.decode(refresh_token, JWT_SECRET, issuer=grant_type, algorithms=JWT_ALGORITHM)
             except jwt.ExpiredSignatureError:
                 self.response.write(json.encode({
                     'refresh_token': 'Your refresh token has been expired!'
+                }))
+                self.response.set_status(400)
+                logging.info('Refresh token has been expired')
+                return
+            except jwt.InvalidIssuerError:
+                self.response.write(json.encode({
+                    'refresh_token': 'Your have invalid token type!'
                 }))
                 self.response.set_status(400)
                 logging.info('Refresh token has been expired')
@@ -196,6 +239,17 @@ class TokenHandler(BaseHandler):
                 }))
                 self.response.set_status(400)
                 logging.info('Login failed for user %s because of %s', user_id, type(e))
+
+
+class LogoutHandler(BaseHandler):
+    @user_required
+    def get(self):
+        self.auth.unset_session()
+        self.response.headers['Content-Type'] = 'application/json'
+        self.response.write(json.encode({
+            'logout': True
+        }))
+        self.response.set_status(200)
 
 
 logging.getLogger().setLevel(logging.DEBUG)
