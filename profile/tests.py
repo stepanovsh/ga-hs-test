@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from google.appengine.ext import testbed, ndb
 
 import main
-from settings import JWT_SECRET, JWT_ALGORITHM, JWT_EXP_DELTA_SECONDS, REFRESH_JWT_EXP_DELTA_SECONDS
+from settings import JWT_SECRET, JWT_ALGORITHM, REFRESH_JWT_EXP_DELTA_SECONDS
 from mock import patch
 
 
@@ -583,6 +583,184 @@ class RefreshTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_int, 400)
         self.assertIsNotNone(response.json_body.get('refresh_token'))
+
+    def tearDown(self):
+        self.testbed.deactivate()
+
+
+class RetrieveUpdateDeleteTestCases(unittest.TestCase):
+
+    def setUp(self):
+        # First, create an instance of the Testbed class.
+        self.testbed = testbed.Testbed()
+        # Then activate the testbed, which prepares the service stubs for use.
+        self.testbed.activate()
+        # Next, declare which service stubs you want to use.
+        self.testbed.init_datastore_v3_stub()
+        self.testbed.init_memcache_stub()
+        self.good_data = {
+            "email": "stepanov+1@example.com",
+            "first_name": "Alex",
+            "last_name": "Alex",
+            "password": "test1234",
+            "repeat_password": "test1234"
+        }
+        self.good_update_data = {
+            "email": "stepanov+2@example.com",
+            "first_name": "Alex",
+            "last_name": "Alex"
+        }
+        ndb.get_context().clear_cache()
+
+    def test_update_success(self):
+        request = webapp2.Request.blank('/signup', POST=self.good_data)
+        request.method = 'POST'
+        response = request.get_response(main.app)
+
+        self.assertEqual(response.status_int, 201)
+        self.assertIsNotNone(response.json_body.get('access_token'))
+        self.assertIsNotNone(response.json_body.get('refresh_token'))
+        self.assertIsNotNone(response.json_body.get('user_id'))
+
+        user_id = response.json_body.get('user_id')
+        access_token = response.json_body.get('access_token')
+        refresh_token = response.json_body.get('refresh_token')
+
+        payload = jwt.decode(access_token, JWT_SECRET, JWT_ALGORITHM)
+        self.assertEqual(user_id, int(payload['user_id']))
+        payload = jwt.decode(refresh_token, JWT_SECRET, JWT_ALGORITHM)
+        self.assertEqual(user_id, int(payload['user_id']))
+
+        request = webapp2.Request.blank('/profile', POST=self.good_update_data,
+                                        headers={'Authorization': 'Bearer %s' % access_token})
+        request.method = 'PUT'
+        response = request.get_response(main.app)
+
+        self.assertEqual(response.status_int, 200)
+
+    def test_retrieve_success(self):
+        request = webapp2.Request.blank('/signup', POST=self.good_data)
+        request.method = 'POST'
+        response = request.get_response(main.app)
+
+        self.assertEqual(response.status_int, 201)
+        self.assertIsNotNone(response.json_body.get('access_token'))
+        self.assertIsNotNone(response.json_body.get('refresh_token'))
+        self.assertIsNotNone(response.json_body.get('user_id'))
+
+        user_id = response.json_body.get('user_id')
+        access_token = response.json_body.get('access_token')
+        refresh_token = response.json_body.get('refresh_token')
+
+        payload = jwt.decode(access_token, JWT_SECRET, JWT_ALGORITHM)
+        self.assertEqual(user_id, int(payload['user_id']))
+        payload = jwt.decode(refresh_token, JWT_SECRET, JWT_ALGORITHM)
+        self.assertEqual(user_id, int(payload['user_id']))
+
+        request = webapp2.Request.blank('/profile', headers={'Authorization': 'Bearer %s' % access_token})
+        request.method = 'GET'
+        response = request.get_response(main.app)
+
+        self.assertEqual(response.status_int, 200)
+
+    def test_delete_success(self):
+        request = webapp2.Request.blank('/signup', POST=self.good_data)
+        request.method = 'POST'
+        response = request.get_response(main.app)
+
+        self.assertEqual(response.status_int, 201)
+        self.assertIsNotNone(response.json_body.get('access_token'))
+        self.assertIsNotNone(response.json_body.get('refresh_token'))
+        self.assertIsNotNone(response.json_body.get('user_id'))
+
+        user_id = response.json_body.get('user_id')
+        access_token = response.json_body.get('access_token')
+        refresh_token = response.json_body.get('refresh_token')
+
+        payload = jwt.decode(access_token, JWT_SECRET, JWT_ALGORITHM)
+        self.assertEqual(user_id, int(payload['user_id']))
+        payload = jwt.decode(refresh_token, JWT_SECRET, JWT_ALGORITHM)
+        self.assertEqual(user_id, int(payload['user_id']))
+
+        request = webapp2.Request.blank('/profile', headers={'Authorization': 'Bearer %s' % access_token})
+        request.method = 'DELETE'
+        response = request.get_response(main.app)
+
+        self.assertEqual(response.status_int, 204)
+
+    def test_permissions(self):
+        request = webapp2.Request.blank('/signup', POST=self.good_data)
+        request.method = 'POST'
+        response = request.get_response(main.app)
+
+        self.assertEqual(response.status_int, 201)
+        self.assertIsNotNone(response.json_body.get('access_token'))
+        self.assertIsNotNone(response.json_body.get('refresh_token'))
+        self.assertIsNotNone(response.json_body.get('user_id'))
+
+        access_token = response.json_body.get('access_token')
+
+        request = webapp2.Request.blank('/profile', POST=self.good_data,
+                                        headers={'Authorization': 'Bearer %s' % access_token})
+        request.method = 'POST'
+        response = request.get_response(main.app)
+
+        self.assertEqual(response.status_int, 405)
+
+    def test_bad_request(self):
+        request = webapp2.Request.blank('/signup', POST=self.good_data)
+        request.method = 'POST'
+        response = request.get_response(main.app)
+
+        self.assertEqual(response.status_int, 201)
+        self.assertIsNotNone(response.json_body.get('access_token'))
+        self.assertIsNotNone(response.json_body.get('refresh_token'))
+        self.assertIsNotNone(response.json_body.get('user_id'))
+
+        user_id = response.json_body.get('user_id')
+        access_token = response.json_body.get('access_token')
+        refresh_token = response.json_body.get('refresh_token')
+
+        payload = jwt.decode(access_token, JWT_SECRET, JWT_ALGORITHM)
+        self.assertEqual(user_id, int(payload['user_id']))
+        payload = jwt.decode(refresh_token, JWT_SECRET, JWT_ALGORITHM)
+        self.assertEqual(user_id, int(payload['user_id']))
+
+        data = copy.deepcopy(self.good_data)
+        data.update({
+            'email': 'stepanov+3@example.com'
+        })
+        request = webapp2.Request.blank('/signup', POST=data)
+        request.method = 'POST'
+        response = request.get_response(main.app)
+
+        self.assertEqual(response.status_int, 201)
+        self.assertIsNotNone(response.json_body.get('access_token'))
+        self.assertIsNotNone(response.json_body.get('refresh_token'))
+        self.assertIsNotNone(response.json_body.get('user_id'))
+
+        invalid_data = {}
+        request = webapp2.Request.blank('/profile', POST=invalid_data,
+                                        headers={'Authorization': 'Bearer %s' % access_token})
+        request.method = 'PUT'
+        response = request.get_response(main.app)
+
+        self.assertEqual(response.status_int, 400)
+
+        self.assertIsNotNone(response.json_body.get('email'))
+        self.assertIsNotNone(response.json_body.get('first_name'))
+        self.assertIsNotNone(response.json_body.get('last_name'))
+
+        invalid_data = copy.deepcopy(self.good_update_data)
+        invalid_data['email'] = 'stepanov+3@example.com'
+        request = webapp2.Request.blank('/profile', POST=invalid_data,
+                                        headers={'Authorization': 'Bearer %s' % access_token})
+        request.method = 'PUT'
+        response = request.get_response(main.app)
+
+        self.assertEqual(response.status_int, 400)
+
+        self.assertIsNotNone(response.json_body.get('email'))
 
     def tearDown(self):
         self.testbed.deactivate()

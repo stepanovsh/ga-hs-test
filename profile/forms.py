@@ -61,3 +61,20 @@ class RefreshForm(wtforms.Form):
     )
     grant_type = wtforms.SelectField(choices=GRANT_TYPE_CHOICES, coerce=str)
     refresh_token = wtforms.StringField(validators=[wtforms.validators.required()])
+
+
+class UpdateProfileForm(wtforms.Form):
+
+    email = wtforms.StringField(validators=[
+        wtforms.validators.Email(),
+        wtforms.validators.required(),
+        wtforms.validators.length(max=255)
+    ])
+    first_name = wtforms.StringField(validators=[
+        wtforms.validators.required(),
+        wtforms.validators.length(max=255)
+    ])
+    last_name = wtforms.StringField(validators=[
+        wtforms.validators.required(),
+        wtforms.validators.length(max=255)
+    ])

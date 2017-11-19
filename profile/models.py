@@ -97,6 +97,12 @@ class User(models.User):
 
         return None, None
 
-
+    @classmethod
+    def delete_by_id(cls, user_id):
+        user_key = model.Key(cls, user_id)
+        # Use delete_multi() to save a RPC call.
+        user = model.delete_multi([user_key])
+        print user
+        return True
 
 

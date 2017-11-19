@@ -7,7 +7,7 @@ import webapp2
 from webapp2_extras import auth, json
 from webapp2_extras.auth import InvalidAuthIdError, InvalidPasswordError
 
-from profile.forms import SignUpForm, SignInForm, RefreshForm
+from profile.forms import SignUpForm, SignInForm, RefreshForm, UpdateProfileForm
 from settings import JWT_SECRET, JWT_ALGORITHM
 
 
@@ -18,7 +18,15 @@ def user_required(handler):
     """
 
     def check_login(self, *args, **kwargs):
-        auth_header = self.request.headers['Authorization']
+        auth_header = self.request.headers.get('Authorization', '')
+        if not len(auth_header):
+            self.response.headers['Content-Type'] = 'application/json'
+            self.response.write(json.encode({
+                'detail': 'Your have invalid token format!'
+            }))
+            self.response.set_status(401)
+            logging.info('Access token has been invalid')
+            return
         start, token = auth_header.split(' ')
         if start == 'Bearer' and token:
             try:
@@ -78,7 +86,6 @@ class BaseHandler(webapp2.RequestHandler):
         :returns
           A dictionary with most user information
         """
-        self.auth.get_user_by_token()
         return self.auth.get_user_by_session()
 
     @webapp2.cached_property
@@ -250,6 +257,66 @@ class LogoutHandler(BaseHandler):
             'logout': True
         }))
         self.response.set_status(200)
+
+
+class RetrieveUpdateDeleteAuthUserHandler(BaseHandler):
+    @user_required
+    def get(self):
+        u = self.user
+        obj = {
+            'user_id': u.get_id(),
+            'email': u.email,
+            'first_name': u.first_name,
+            'last_name': u.last_name,
+        }
+        self.response.headers['Content-Type'] = 'application/json'
+        self.response.write(json.encode(obj))
+        self.response.set_status(200)
+
+    @user_required
+    def put(self):
+        data = self.request.json_body if self.request.content_type == 'application/json' else self.request.POST
+        self.response.headers['Content-Type'] = 'application/json'
+
+        form = UpdateProfileForm(data=data)
+        if not form.validate():
+            self.response.write(json.encode(form.errors))
+            self.response.set_status(400)
+            return
+        u = self.user
+        if u.email != form.data.get('email'):
+            ur = self.user_model.get_by_auth_id(form.data.get('email'))
+            if ur is not None:
+                self.response.write(json.encode({
+                    'email': 'User with this email already exists'
+                }))
+                self.response.set_status(400)
+                return
+            u.email = form.data.get('email')
+            u.add_auth_id(form.data.get('email'))
+        form.data.pop('email')
+        for k, v in form.data.items():
+            setattr(u, k, v)
+        u.put()
+        obj = {
+            'user_id': u.get_id(),
+            'email': u.email,
+            'first_name': u.first_name,
+            'last_name': u.last_name,
+        }
+        self.response.headers['Content-Type'] = 'application/json'
+        self.response.write(json.encode(obj))
+        self.response.set_status(200)
+
+    @user_required
+    def delete(self):
+        self.response.headers['Content-Type'] = 'application/json'
+        u = self.user
+        user_id = u.get_id()
+        self.auth.unset_session()
+        self.user_model.delete_by_id(user_id)
+        self.response.headers['Content-Type'] = 'application/json'
+        self.response.set_status(204)
 
 
 logging.getLogger().setLevel(logging.DEBUG)
