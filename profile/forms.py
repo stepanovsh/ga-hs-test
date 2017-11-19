@@ -35,3 +35,15 @@ class SignUpForm(wtforms.Form):
             self._errors = {'non_fields_errors': 'Passwords do not match!'}
             return False
         return ret
+
+
+class SignInForm(wtforms.Form):
+    email = wtforms.StringField(validators=[
+        wtforms.validators.Email(),
+        wtforms.validators.required(),
+        wtforms.validators.length(max=255)
+    ])
+    password = wtforms.PasswordField(validators=[
+        wtforms.validators.required(),
+        wtforms.validators.length(min=6, max=255)
+    ])

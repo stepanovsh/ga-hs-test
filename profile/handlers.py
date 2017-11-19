@@ -1,20 +1,12 @@
 #!/usr/bin/env python
-
-from google.appengine.ext.webapp import template
-from google.appengine.ext import ndb
-
 import logging
-import os.path
+
 import webapp2
-import wtforms
 
 from webapp2_extras import auth, json
-from webapp2_extras import sessions
+from webapp2_extras.auth import InvalidAuthIdError, InvalidPasswordError
 
-from webapp2_extras.auth import InvalidAuthIdError
-from webapp2_extras.auth import InvalidPasswordError
-
-from profile.forms import SignUpForm
+from profile.forms import SignUpForm, SignInForm
 
 
 def user_required(handler):
@@ -86,13 +78,13 @@ class SignupHandler(BaseHandler):
 
         email = form.data.get('email')
         first_name = form.data.get('first_name')
-        last_name = form.data.get('lastname')
+        last_name = form.data.get('last_name')
         password = form.data.get('password')
 
-        unique_properties = ['email_address']
+        unique_properties = ['email']
         user_data = self.user_model.create_user(email,
                                                 unique_properties,
-                                                email_address=email, name=first_name, password_raw=password,
+                                                email=email, first_name=first_name, password_raw=password,
                                                 last_name=last_name, verified=True)
         if not user_data[0]:  # user_data is a tuple
             self.response.write(json.encode({
@@ -114,6 +106,40 @@ class SignupHandler(BaseHandler):
         }
         self.response.write(json.encode(obj))
         self.response.set_status(201)
+
+
+class SignInHandler(BaseHandler):
+
+    def post(self):
+        data = self.request.json_body if self.request.content_type == 'application/json' else self.request.POST
+        self.response.headers['Content-Type'] = 'application/json'
+        form = SignInForm(data=data)
+        if not form.validate():
+            self.response.write(json.encode(form.errors))
+            self.response.set_status(400)
+            return
+
+        email = form.data.get('email')
+        password = form.data.get('password')
+        try:
+            u = self.auth.get_user_by_password(email, password, remember=True)
+            obj = {
+                'user_id': u.get('user_id'),
+                'email': u.get('email'),
+                'first_name': u.get('first_name'),
+                'last_name': u.get('last_name'),
+                'access_token': u.get('token')[0],
+                'refresh_token': u.get('token')[1],
+            }
+            self.response.write(json.encode(obj))
+            self.response.set_status(200)
+
+        except (InvalidAuthIdError, InvalidPasswordError) as e:
+            self.response.write(json.encode({
+                'non_fields_errors': 'Login failed for user %s because user with this email does not exist' % (email,)
+            }))
+            self.response.set_status(400)
+            logging.info('Login failed for user %s because of %s', email, type(e))
 
 
 logging.getLogger().setLevel(logging.DEBUG)

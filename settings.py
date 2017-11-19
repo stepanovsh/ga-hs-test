@@ -5,10 +5,10 @@ import os
 config = {
     'webapp2_extras.auth': {
         'user_model': 'profile.models.User',
-        'user_attributes': ['name']
+        'user_attributes': ['first_name', 'last_name', 'email']
     },
     'webapp2_extras.sessions': {
-        'secret_key': 'YOUR_SECRET_KEY'
+        'secret_key': os.environ.setdefault('APP_SECRET_KEY', 'YOUR_SECRET_KEY')
     }
 }
 
