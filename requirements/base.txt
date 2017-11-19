@@ -4,3 +4,4 @@ Paste==2.0.3
 google-api-python-client
 PyJWT==1.5.3
 WTForms==2.1
+mock==2.0.0

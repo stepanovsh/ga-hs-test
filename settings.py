@@ -16,4 +16,5 @@ config = {
 JWT_SECRET = os.environ.setdefault('JWT_SECRET', 'secret')
 JWT_ALGORITHM = os.environ.setdefault('JWT_ALGORITHM', 'HS256')
 JWT_EXP_DELTA_SECONDS = int(os.environ.setdefault('JWT_EXP_DELTA_SECONDS', '600'))  # default 5 minutes
-REFRESH_JWT_EXP_DELTA_SECONDS = int(os.environ.setdefault('JWT_EXP_DELTA_SECONDS', str(60*24*10)))  # default 10 days
+REFRESH_JWT_EXP_DELTA_SECONDS = int(os.environ.setdefault(
+    'REFRESH_JWT_EXP_DELTA_SECONDS', str(60 * 60 * 24 * 10)))  # default 10 days

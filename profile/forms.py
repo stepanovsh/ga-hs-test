@@ -38,6 +38,11 @@ class SignUpForm(wtforms.Form):
 
 
 class SignInForm(wtforms.Form):
+    GRANT_TYPE_CHOICES = (
+        ('password', 'password',),
+        ('refresh', 'refresh',),
+    )
+    grant_type = wtforms.SelectField(choices=GRANT_TYPE_CHOICES, coerce=str)
     email = wtforms.StringField(validators=[
         wtforms.validators.Email(),
         wtforms.validators.required(),
@@ -47,3 +52,12 @@ class SignInForm(wtforms.Form):
         wtforms.validators.required(),
         wtforms.validators.length(min=6, max=255)
     ])
+
+
+class RefreshForm(wtforms.Form):
+    GRANT_TYPE_CHOICES = (
+        ('password', 'password',),
+        ('refresh', 'refresh',),
+    )
+    grant_type = wtforms.SelectField(choices=GRANT_TYPE_CHOICES, coerce=str)
+    refresh_token = wtforms.StringField(validators=[wtforms.validators.required()])

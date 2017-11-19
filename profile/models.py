@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import jwt
+import time
 
 from datetime import datetime, timedelta
 from settings import JWT_EXP_DELTA_SECONDS, JWT_ALGORITHM, JWT_SECRET, REFRESH_JWT_EXP_DELTA_SECONDS
@@ -19,7 +20,7 @@ class JWTUserToken(models.UserToken):
     @classmethod
     def generate_jwt(cls, user, subject):
         payload = {
-            'user': user,
+            'user_id': user,
             'subject': subject,
             'exp': datetime.utcnow() + timedelta(
                 seconds=JWT_EXP_DELTA_SECONDS if subject == 'auth' else REFRESH_JWT_EXP_DELTA_SECONDS)
@@ -73,5 +74,29 @@ class User(models.User):
             A tuple with authorization token and refresh token.
         """
         return cls.token_model.create(user_id, 'auth').token, cls.token_model.create(user_id, 'refresh').token
+
+    @classmethod
+    def get_by_refresh_token(cls, user_id, token):
+        """Returns a user object based on a user ID and token.
+
+        :param user_id:
+            The user_id of the requesting user.
+        :param token:
+            The token string to be verified.
+        :returns:
+            A tuple ``(User, timestamp)``, with a user object and
+            the token timestamp, or ``(None, None)`` if both were not found.
+        """
+        token_key = cls.token_model.get_key(user_id, 'refresh', token)
+        user_key = model.Key(cls, user_id)
+        # Use get_multi() to save a RPC call.
+        valid_token, user = model.get_multi([token_key, user_key])
+        if valid_token and user:
+            timestamp = int(time.mktime(valid_token.created.timetuple()))
+            return user, timestamp
+
+        return None, None
+
+
 
 
