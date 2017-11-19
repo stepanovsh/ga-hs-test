@@ -1,0 +1,6 @@
+webapp2==2.5.2
+WebOb==1.7.3
+Paste==2.0.3
+google-api-python-client
+PyJWT==1.5.3
+WTForms==2.1
