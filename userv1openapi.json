@@ -20,6 +20,60 @@
       },
       "type": "object"
     },
+    "ProfileMessagesProfileRequest": {
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "first_name": {
+          "type": "string"
+        },
+        "last_name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "email",
+        "first_name",
+        "last_name"
+      ],
+      "type": "object"
+    },
+    "ProfileMessagesProfileResponse": {
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "first_name": {
+          "type": "string"
+        },
+        "id": {
+          "format": "int64",
+          "type": "string"
+        },
+        "last_name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "email",
+        "first_name",
+        "id",
+        "last_name"
+      ],
+      "type": "object"
+    },
+    "ProfileMessagesRefreshRequest": {
+      "properties": {
+        "refresh_token": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "refresh_token"
+      ],
+      "type": "object"
+    },
     "ProfileMessagesSignInRequest": {
       "properties": {
         "email": {
@@ -129,6 +183,82 @@
     "version": "v1"
   },
   "paths": {
+    "/user/v1/logout": {
+      "get": {
+        "operationId": "UserApi_logout",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "A successful response"
+          }
+        }
+      }
+    },
+    "/user/v1/profile": {
+      "delete": {
+        "operationId": "UserApi_deleteProfile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "A successful response"
+          }
+        }
+      },
+      "get": {
+        "operationId": "UserApi_retrieveProfile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "A successful response",
+            "schema": {
+              "$ref": "#/definitions/ProfileMessagesProfileResponse"
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "UserApi_updateProfile",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "$ref": "#/definitions/ProfileMessagesProfileRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response",
+            "schema": {
+              "$ref": "#/definitions/ProfileMessagesProfileResponse"
+            }
+          }
+        }
+      }
+    },
+    "/user/v1/refresh": {
+      "post": {
+        "operationId": "UserApi_refresh",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "$ref": "#/definitions/ProfileMessagesRefreshRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response",
+            "schema": {
+              "$ref": "#/definitions/ProfileMessagesSignInResponse"
+            }
+          }
+        }
+      }
+    },
     "/user/v1/signin": {
       "post": {
         "operationId": "UserApi_signIn",

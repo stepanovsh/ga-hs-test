@@ -31,6 +31,11 @@ class UserApi(BaseHandler, remote.Service):
         first_name = instance.first_name
         last_name = instance.last_name
         password = instance.password
+        repeat_password = instance.repeat_password
+
+        if password != repeat_password:
+            raise endpoints.BadRequestException(
+                "Password do not match")
 
         unique_properties = ['email']
         user_data = User.create_user(email,
@@ -38,7 +43,7 @@ class UserApi(BaseHandler, remote.Service):
                                      email=email, first_name=first_name, password_raw=password,
                                      last_name=last_name, verified=True)
         if not user_data[0]:
-            raise endpoints.ConflictException(
+            raise endpoints.BadRequestException(
                 "User with this email already exists.")
         user = user_data[1]
         user_id = user.get_id()
@@ -46,6 +51,7 @@ class UserApi(BaseHandler, remote.Service):
         token, refresh_token = User.create_auth_token(user_id)
 
         return SignUpResponse(
+            id=user.get_id(),
             email=user.email,
             first_name=user.first_name,
             last_name=user.last_name,
@@ -60,7 +66,6 @@ class UserApi(BaseHandler, remote.Service):
                       name='sign_in', )
     def sign_in(self, instance):
         logging.info(instance)
-        print dir(instance)
         email = instance.email
         password = instance.password
         try:
@@ -70,7 +75,7 @@ class UserApi(BaseHandler, remote.Service):
         except (InvalidAuthIdError, InvalidPasswordError) as e:
             logging.info('Login failed for user %s because of %s', email, type(e))
 
-            raise endpoints.ConflictException({
+            raise endpoints.BadRequestException({
                 'Login failed for user %s because user with this email does not exist' % email
             })
 
@@ -95,17 +100,17 @@ class UserApi(BaseHandler, remote.Service):
         except jwt.ExpiredSignatureError:
 
             logging.info('Refresh token has been expired')
-            raise endpoints.ConflictException(
+            raise endpoints.BadRequestException(
                 'Your refresh token has been expired!')
         except jwt.InvalidIssuerError:
             logging.info('Refresh token has been expired')
-            raise endpoints.ConflictException(
+            raise endpoints.BadRequestException(
                 'Your have invalid token type!')
         user_id = int(payload['user_id'])
         user, timestamp = User.get_by_refresh_token(user_id, refresh_token)
         if user is None and timestamp is None:
             logging.info('Invalid refresh token!')
-            raise endpoints.ConflictException(
+            raise endpoints.BadRequestException(
                 'Invalid refresh token!')
         token, refresh_token = User.create_auth_token(user_id)
 
@@ -153,9 +158,9 @@ class UserApi(BaseHandler, remote.Service):
     def update_profile(self, instance):
         logging.info(instance)
         if self.user.email != instance.email:
-            ur = self.user_model.get_by_auth_id(instance.email)
+            ur = User.get_by_auth_id(instance.email)
             if ur is not None:
-                raise endpoints.ConflictException('User with this email already exists')
+                raise endpoints.BadRequestException('User with this email already exists')
             self.user.email = instance.email
             self.user.add_auth_id(instance.email)
         for field in instance.all_fields():

@@ -30,5 +30,5 @@ env_variables:
   # The following values are to be replaced by information from the output of
   # 'gcloud endpoints services deploy swagger.json' command.
   ENDPOINTS_SERVICE_NAME: ga-hs-test.appspot.com
-  ENDPOINTS_SERVICE_VERSION: 2017-11-20r1
+  ENDPOINTS_SERVICE_VERSION: 2017-11-21r0
  # [END env_vars]
