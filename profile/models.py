@@ -98,6 +98,30 @@ class User(models.User):
         return None, None
 
     @classmethod
+    def get_by_auth_token(cls, user_id, token):
+        """Returns a user object based on a user ID and token.
+
+        :param user_id:
+            The user_id of the requesting user.
+        :param token:
+            The token string to be verified.
+        :returns:
+            A tuple ``(User, timestamp)``, with a user object and
+            the token timestamp, or ``(None, None)`` if both were not found.
+        """
+        token_key = cls.token_model.get_key(user_id, 'auth', token)
+        user_key = model.Key(cls, user_id)
+        print user_key, token_key
+        # Use get_multi() to save a RPC call.
+        valid_token, user = model.get_multi([token_key, user_key])
+        print valid_token, user
+        if valid_token and user:
+            timestamp = int(time.mktime(valid_token.created.timetuple()))
+            return user, timestamp
+
+        return None, None
+
+    @classmethod
     def delete_by_id(cls, user_id):
         user_key = model.Key(cls, user_id)
         # Use delete_multi() to save a RPC call.

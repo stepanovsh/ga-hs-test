@@ -34,3 +34,7 @@ class SignInResponse(messages.Message):
     last_name = messages.StringField(4, required=True)
     access_token = messages.StringField(5, required=True)
     refresh_token = messages.StringField(6, required=True)
+
+
+class RefreshRequest(messages.Message):
+    refresh_token = messages.StringField(1, required=True)

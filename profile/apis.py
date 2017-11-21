@@ -1,6 +1,7 @@
 import logging
 
 import endpoints
+import jwt
 
 from protorpc import remote, message_types
 from protorpc import messages
@@ -9,8 +10,9 @@ from webapp2_extras.auth import InvalidAuthIdError, InvalidPasswordError
 
 from profile.decorators import user_required
 from profile.handlers import BaseHandler
-from profile.messages import SignUpRequest, SignUpResponse, SignInRequest, SignInResponse
+from profile.messages import SignUpRequest, SignUpResponse, SignInRequest, SignInResponse, RefreshRequest
 from profile.models import User
+from settings import JWT_SECRET, JWT_ALGORITHM
 
 logging.getLogger().setLevel(logging.DEBUG)
 
@@ -80,6 +82,41 @@ class UserApi(BaseHandler, remote.Service):
             refresh_token=refresh_token
         )
 
+    @endpoints.method(request_message=RefreshRequest,
+                      response_message=SignInResponse,
+                      path='refresh',
+                      http_method='POST',
+                      name='refresh', )
+    def refresh(self, instance):
+        refresh_token = instance.refresh_token
+        try:
+            payload = jwt.decode(refresh_token, JWT_SECRET, issuer='refresh', algorithms=JWT_ALGORITHM)
+        except jwt.ExpiredSignatureError:
+
+            logging.info('Refresh token has been expired')
+            raise endpoints.ConflictException(
+                'Your refresh token has been expired!')
+        except jwt.InvalidIssuerError:
+            logging.info('Refresh token has been expired')
+            raise endpoints.ConflictException(
+                'Your have invalid token type!')
+        user_id = int(payload['user_id'])
+        user, timestamp = User.get_by_refresh_token(user_id, refresh_token)
+        if user is None and timestamp is None:
+            logging.info('Invalid refresh token!')
+            raise endpoints.ConflictException(
+                'Invalid refresh token!')
+        token, refresh_token = User.create_auth_token(user_id)
+
+        return SignInResponse(
+            id=user.get_id(),
+            email=user.email,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            access_token=token,
+            refresh_token=refresh_token
+        )
+
     @endpoints.method(message_types.VoidMessage,
                       message_types.VoidMessage,
                       path='logout',
@@ -88,5 +125,5 @@ class UserApi(BaseHandler, remote.Service):
     @user_required
     def logout(self, instance):
         logging.info(instance)
-        print self.token, self.user
         User.delete_auth_token(self.user.get_id(), self.token)
+        return message_types.VoidMessage()
