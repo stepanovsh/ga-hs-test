@@ -4,13 +4,13 @@ import endpoints
 import jwt
 
 from protorpc import remote, message_types
-from protorpc import messages
 
 from webapp2_extras.auth import InvalidAuthIdError, InvalidPasswordError
 
 from profile.decorators import user_required
 from profile.handlers import BaseHandler
-from profile.messages import SignUpRequest, SignUpResponse, SignInRequest, SignInResponse, RefreshRequest
+from profile.messages import SignUpRequest, SignUpResponse, SignInRequest, SignInResponse, RefreshRequest, \
+    ProfileRequest, ProfileResponse
 from profile.models import User
 from settings import JWT_SECRET, JWT_ALGORITHM
 
@@ -60,6 +60,7 @@ class UserApi(BaseHandler, remote.Service):
                       name='sign_in', )
     def sign_in(self, instance):
         logging.info(instance)
+        print dir(instance)
         email = instance.email
         password = instance.password
         try:
@@ -126,4 +127,58 @@ class UserApi(BaseHandler, remote.Service):
     def logout(self, instance):
         logging.info(instance)
         User.delete_auth_token(self.user.get_id(), self.token)
+        return message_types.VoidMessage()
+
+    @endpoints.method(message_types.VoidMessage,
+                      ProfileResponse,
+                      path='profile',
+                      http_method='GET',
+                      name='retrieve_profile', )
+    @user_required
+    def retrieve_profile(self, instance):
+        logging.info(instance)
+        return ProfileResponse(
+            id=self.user.get_id(),
+            email=self.user.email,
+            first_name=self.user.first_name,
+            last_name=self.user.last_name,
+        )
+
+    @endpoints.method(ProfileRequest,
+                      ProfileResponse,
+                      path='profile',
+                      http_method='PUT',
+                      name='update_profile', )
+    @user_required
+    def update_profile(self, instance):
+        logging.info(instance)
+        if self.user.email != instance.email:
+            ur = self.user_model.get_by_auth_id(instance.email)
+            if ur is not None:
+                raise endpoints.ConflictException('User with this email already exists')
+            self.user.email = instance.email
+            self.user.add_auth_id(instance.email)
+        for field in instance.all_fields():
+            if field.name != 'email':
+                value = getattr(instance, field.name)
+                setattr(self.user, field.name, value)
+        self.user.put()
+        return ProfileResponse(
+            id=self.user.get_id(),
+            email=self.user.email,
+            first_name=self.user.first_name,
+            last_name=self.user.last_name,
+        )
+
+    @endpoints.method(message_types.VoidMessage,
+                      message_types.VoidMessage,
+                      path='profile',
+                      http_method='DELETE',
+                      name='delete_profile', )
+    @user_required
+    def delete_profile(self, instance):
+        logging.info(instance)
+        user_id = self.user.get_id()
+        User.delete_auth_token(self.user.get_id(), self.token)
+        User.delete_by_id(user_id)
         return message_types.VoidMessage()

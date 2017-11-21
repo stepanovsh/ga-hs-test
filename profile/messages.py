@@ -38,3 +38,17 @@ class SignInResponse(messages.Message):
 
 class RefreshRequest(messages.Message):
     refresh_token = messages.StringField(1, required=True)
+
+
+class ProfileRequest(messages.Message):
+    email = messages.StringField(1, required=True)
+    first_name = messages.StringField(2, required=True)
+    last_name = messages.StringField(3, required=True)
+
+
+class ProfileResponse(messages.Message):
+    """A proto Message that contains a simple string field."""
+    id = messages.IntegerField(1, required=True)
+    email = messages.StringField(2, required=True)
+    first_name = messages.StringField(3, required=True)
+    last_name = messages.StringField(4, required=True)
