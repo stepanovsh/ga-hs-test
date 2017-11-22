@@ -17,7 +17,7 @@ from settings import JWT_SECRET, JWT_ALGORITHM
 logging.getLogger().setLevel(logging.DEBUG)
 
 
-@endpoints.api(name='user', version='v1', description='User API')
+@endpoints.api(name='user', version='v1', description='User API', api_key_required=True)
 class UserApi(BaseHandler, remote.Service):
 
     @endpoints.method(request_message=SignUpRequest,

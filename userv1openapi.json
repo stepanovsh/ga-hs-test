@@ -159,6 +159,10 @@
         "first_name": {
           "type": "string"
         },
+        "id": {
+          "format": "int64",
+          "type": "string"
+        },
         "last_name": {
           "type": "string"
         },
@@ -170,6 +174,7 @@
         "access_token",
         "email",
         "first_name",
+        "id",
         "last_name",
         "refresh_token"
       ],
@@ -191,7 +196,12 @@
           "200": {
             "description": "A successful response"
           }
-        }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
       }
     },
     "/user/v1/profile": {
@@ -202,7 +212,12 @@
           "200": {
             "description": "A successful response"
           }
-        }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
       },
       "get": {
         "operationId": "UserApi_retrieveProfile",
@@ -214,7 +229,12 @@
               "$ref": "#/definitions/ProfileMessagesProfileResponse"
             }
           }
-        }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
       },
       "put": {
         "operationId": "UserApi_updateProfile",
@@ -234,7 +254,12 @@
               "$ref": "#/definitions/ProfileMessagesProfileResponse"
             }
           }
-        }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
       }
     },
     "/user/v1/refresh": {
@@ -256,7 +281,12 @@
               "$ref": "#/definitions/ProfileMessagesSignInResponse"
             }
           }
-        }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
       }
     },
     "/user/v1/signin": {
@@ -278,7 +308,12 @@
               "$ref": "#/definitions/ProfileMessagesSignInResponse"
             }
           }
-        }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
       }
     },
     "/user/v1/signup": {
@@ -300,7 +335,12 @@
               "$ref": "#/definitions/ProfileMessagesSignUpResponse"
             }
           }
-        }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
       }
     }
   },
@@ -311,6 +351,11 @@
     "https"
   ],
   "securityDefinitions": {
+    "api_key": {
+      "in": "query",
+      "name": "key",
+      "type": "apiKey"
+    },
     "google_id_token": {
       "authorizationUrl": "",
       "flow": "implicit",

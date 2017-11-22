@@ -50,6 +50,8 @@ htmlcov
 
 # npm
 node_modules/
+ga-front/node_modules/
+ga-front/bower_components/
 
 # Compass
 .sass-cache
