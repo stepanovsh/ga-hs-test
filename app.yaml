@@ -12,12 +12,29 @@ skip_files:
 - ^(.*/)?.*/RCS/.*$
 - ^(.*/)?\..*$
 - ^(.*/)?setuptools/script \(dev\).tmpl$
+- ^(.*/)?.*/bower_components/.*$
+- ^(.*/)?.*/node_modules/.*$
 #[END_EXCLUDE]
 
 handlers:
 # The endpoints handler must be mapped to /_ah/api.
 - url: /_ah/api/.*
   script: main.api
+
+- url: /styles
+  static_dir: ga-front/dist/styles
+
+- url: /scripts
+  static_dir: ga-front/dist/scripts
+
+- url: /images
+  static_dir: ga-front/dist/images
+
+- url: /fonts
+  static_dir: ga-front/dist/fonts
+
+- url: .*
+  script: main.app
 
 libraries:
 - name: pycrypto
@@ -30,5 +47,5 @@ env_variables:
   # The following values are to be replaced by information from the output of
   # 'gcloud endpoints services deploy swagger.json' command.
   ENDPOINTS_SERVICE_NAME: ga-hs-test.appspot.com
-  ENDPOINTS_SERVICE_VERSION: 2017-11-21r2
+  ENDPOINTS_SERVICE_VERSION: 2017-11-22r2
  # [END env_vars]

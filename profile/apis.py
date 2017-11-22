@@ -8,7 +8,6 @@ from protorpc import remote, message_types
 from webapp2_extras.auth import InvalidAuthIdError, InvalidPasswordError
 
 from profile.decorators import user_required
-from profile.handlers import BaseHandler
 from profile.messages import SignUpRequest, SignUpResponse, SignInRequest, SignInResponse, RefreshRequest, \
     ProfileRequest, ProfileResponse
 from profile.models import User
@@ -18,7 +17,7 @@ logging.getLogger().setLevel(logging.DEBUG)
 
 
 @endpoints.api(name='user', version='v1', description='User API', api_key_required=True)
-class UserApi(BaseHandler, remote.Service):
+class UserApi(remote.Service):
 
     @endpoints.method(request_message=SignUpRequest,
                       response_message=SignUpResponse,
@@ -26,6 +25,32 @@ class UserApi(BaseHandler, remote.Service):
                       http_method='POST',
                       name='sign_up',)
     def sign_up(self, instance):
+        """
+        :param instance:
+        - field: email
+          type: string
+        - field: first_name
+          type: string
+        - field: last_name
+          type: string
+        - field: password
+          type: string
+        - field: repeat_passwor
+          type: string
+        :return user instance:
+        - field: id
+          type: int
+        - field: email
+          type: string
+        - field: first_name
+          type: string
+        - field: last_name
+          type: string
+        - field: access_token
+          type: string
+        - field: refresh_token
+          type: string
+        """
         logging.info(instance)
         email = instance.email
         first_name = instance.first_name
@@ -65,6 +90,26 @@ class UserApi(BaseHandler, remote.Service):
                       http_method='POST',
                       name='sign_in', )
     def sign_in(self, instance):
+        """
+        :param instance:
+        - field: email
+          type: string
+        - field: password
+          type: string
+        :return user instance:
+        - field: id
+          type: int
+        - field: email
+          type: string
+        - field: first_name
+          type: string
+        - field: last_name
+          type: string
+        - field: access_token
+          type: string
+        - field: refresh_token
+          type: string
+        """
         logging.info(instance)
         email = instance.email
         password = instance.password
@@ -75,9 +120,9 @@ class UserApi(BaseHandler, remote.Service):
         except (InvalidAuthIdError, InvalidPasswordError) as e:
             logging.info('Login failed for user %s because of %s', email, type(e))
 
-            raise endpoints.BadRequestException({
+            raise endpoints.BadRequestException(
                 'Login failed for user %s because user with this email does not exist' % email
-            })
+            )
 
         return SignInResponse(
             id=user.get_id(),
@@ -94,6 +139,26 @@ class UserApi(BaseHandler, remote.Service):
                       http_method='POST',
                       name='refresh', )
     def refresh(self, instance):
+        """
+        :param instance:
+        - field: refresh_token
+          type: string
+        - field: password
+          type: string
+        :return user instance:
+        - field: id
+          type: int
+        - field: email
+          type: string
+        - field: first_name
+          type: string
+        - field: last_name
+          type: string
+        - field: access_token
+          type: string
+        - field: refresh_token
+          type: string
+        """
         refresh_token = instance.refresh_token
         try:
             payload = jwt.decode(refresh_token, JWT_SECRET, issuer='refresh', algorithms=JWT_ALGORITHM)
@@ -130,6 +195,10 @@ class UserApi(BaseHandler, remote.Service):
                       name='logout', )
     @user_required
     def logout(self, instance):
+        """
+        :param instance:
+        :return no-content:
+        """
         logging.info(instance)
         User.delete_auth_token(self.user.get_id(), self.token)
         return message_types.VoidMessage()
@@ -141,6 +210,18 @@ class UserApi(BaseHandler, remote.Service):
                       name='retrieve_profile', )
     @user_required
     def retrieve_profile(self, instance):
+        """
+        :param instance voidmessage:
+        :return user instance:
+        - field: id
+          type: int
+        - field: email
+          type: string
+        - field: first_name
+          type: string
+        - field: last_name
+          type: string
+        """
         logging.info(instance)
         return ProfileResponse(
             id=self.user.get_id(),
@@ -156,6 +237,24 @@ class UserApi(BaseHandler, remote.Service):
                       name='update_profile', )
     @user_required
     def update_profile(self, instance):
+        """
+        :param instance:
+        - field: email
+          type: string
+        - field: first_name
+          type: string
+        - field: last_name
+          type: string
+        :return user instance:
+        - field: id
+          type: int
+        - field: email
+          type: string
+        - field: first_name
+          type: string
+        - field: last_name
+          type: string
+        """
         logging.info(instance)
         if self.user.email != instance.email:
             ur = User.get_by_auth_id(instance.email)
@@ -182,6 +281,10 @@ class UserApi(BaseHandler, remote.Service):
                       name='delete_profile', )
     @user_required
     def delete_profile(self, instance):
+        """
+        :param instance:
+        :return no-content:
+        """
         logging.info(instance)
         user_id = self.user.get_id()
         User.delete_auth_token(self.user.get_id(), self.token)

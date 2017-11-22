@@ -4,22 +4,6 @@
     "application/json"
   ],
   "definitions": {
-    "MainEchoRequest": {
-      "properties": {
-        "content": {
-          "type": "string"
-        }
-      },
-      "type": "object"
-    },
-    "MainEchoResponse": {
-      "properties": {
-        "content": {
-          "type": "string"
-        }
-      },
-      "type": "object"
-    },
     "ProfileMessagesProfileRequest": {
       "properties": {
         "email": {

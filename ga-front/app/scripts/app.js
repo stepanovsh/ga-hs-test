@@ -18,6 +18,7 @@ angular
     'ngRoute',
     'ngSanitize',
     'ngTouch',
+    'angularSpinner',
     'gaHsTestApp.profileService',
     'gaHsTestApp.GlobalCtrl',
     'gaHsTestApp.MainCtrl',
@@ -43,11 +44,6 @@ angular
         templateUrl: 'views/signup.html',
         controller: 'SignupCtrl',
         controllerAs: 'signup'
-      })
-      .when('/about', {
-        templateUrl: 'views/about.html',
-        controller: 'AboutCtrl',
-        controllerAs: 'about'
       })
       .otherwise({
         redirectTo: '/'

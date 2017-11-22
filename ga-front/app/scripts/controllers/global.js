@@ -8,7 +8,7 @@
  * Controller of the gaHsTestApp
  */
 angular.module('gaHsTestApp.GlobalCtrl', [])
-  .controller('GlobalCtrl', function ($scope, profileService, loginAuthServices, $rootScope, $location, $http) {
+  .controller('GlobalCtrl', function ($scope, profileService, loginAuthServices, $rootScope, $location, $http, $timeout, usSpinnerService) {
     $scope.authUser = null;
     $scope.ifAuth = function () {
       if ($scope.authUser && $rootScope.userCookieId) {
@@ -29,7 +29,6 @@ angular.module('gaHsTestApp.GlobalCtrl', [])
         profileService.storeToken(resp.data.access_token, resp.data.refresh_token);
         profileService.storeUser(resp.data);
         $scope.authFn();
-        $scope.loginData = {};
       }, function (resp) {
         profileService.logOut();
         $scope.authFn();
@@ -37,6 +36,7 @@ angular.module('gaHsTestApp.GlobalCtrl', [])
     };
 
     $scope.updateUser = function () {
+      usSpinnerService.stop('spinner-1');
       $scope.userCookieId = profileService.getUserId();
       if ($scope.userCookieId) {
         loginAuthServices.getUserInfo()
@@ -45,10 +45,12 @@ angular.module('gaHsTestApp.GlobalCtrl', [])
             $scope.authUser.first_name = resp.data.first_name;
             $scope.authUser.last_name = resp.data.last_name;
             profileService.storeUser($scope.authUser);
+            usSpinnerService.stop('spinner-1');
           }, function (resp) {
             if (resp.status === 401) {
               $scope.updateRefreshToken()
             }
+            usSpinnerService.stop('spinner-1');
           });
       } else {
         $scope.authFn();

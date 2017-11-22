@@ -8,12 +8,14 @@
  * Controller of the gaHsTestApp
  */
 angular.module('gaHsTestApp.SignupCtrl', [])
-  .controller('SignupCtrl', function ($scope, profileService, loginAuthServices) {
+  .controller('SignupCtrl', function ($scope, profileService, loginAuthServices, usSpinnerService) {
     $scope.signupData = {};
     $scope.signupErrors = '';
 
     $scope.doSignUp = function () {
+      usSpinnerService.spin('spinner-1');
       console.log($scope.signupData);
+      $scope.signupErrors = '';
       loginAuthServices.signUp({
         email: $scope.signupData.email,
         first_name: $scope.signupData.first_name,
@@ -26,13 +28,14 @@ angular.module('gaHsTestApp.SignupCtrl', [])
           profileService.storeUser(resp.data);
           $scope.authFn();
           $scope.signupData = {};
+          usSpinnerService.stop('spinner-1');
         }, function (resp) {
           console.log(resp);
           var errors = resp.data.error.errors;
-          $scope.loginErrors = errors.map(function (elem) {
+          $scope.signupErrors = errors.map(function (elem) {
             return elem.message;
           }).join(". ");
-
+          usSpinnerService.stop('spinner-1');
         });
     };
   });
